@@ -38,5 +38,79 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
 
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+    }
+}
+
+ext {
+    bintrayRepo = 'DashJInterface'
+    bintrayName = 'dashj-interface'
+
+    publishedGroupId = 'org.dashj'
+    libraryName = 'DashJInterface'
+    artifact = 'dashj-interface'
+
+    libraryDescription = 'Sample description'
+
+    siteUrl = 'https://github.com/tomasz-ludek/dashj-interface'
+    gitUrl = 'https://github.com/tomasz-ludek/dashj-interface/issues.git'
+
+    libraryVersion = '0.9.2'
+
+    developerId = 'tomasz-ludek'
+    developerName = 'Tomasz Ludek'
+    developerEmail = 'tomasz@dash.org'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+group = publishedGroupId
+version = libraryVersion
+
+install {
+    repositories.mavenInstaller {
+        pom.project {
+            packaging 'aar'
+            groupId publishedGroupId
+            artifactId artifact
+
+            name libraryName
+            description libraryDescription
+            url siteUrl
+
+            licenses {
+                license {
+                    name licenseName
+                    url licenseUrl
+                }
+            }
+            developers {
+                developer {
+                    id developerId
+                    name developerName
+                    email developerEmail
+                }
+            }
+            scm {
+                connection gitUrl
+                developerConnection gitUrl
+                url siteUrl
+            }
+        }
+    }
+}
+
+apply from: 'bintray.gradle'
