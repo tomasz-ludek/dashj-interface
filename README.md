@@ -5,14 +5,14 @@ Add dashj-interface to your project
 
 Via Gradle:
 ```gradle
-implementation 'org.dash.dashjinterface:dashjinterface:0.0.9'
+implementation 'org.dashj:dashj-interface:0.9.1'
 ```
 
 Via Maven:
 ```xml
 <dependency>
-  <groupId>org.dash.dashjinterface</groupId>
-  <artifactId>dashjinterface</artifactId>
-  <version>0.0.9</version>
+  <groupId>org.dashj</groupId>
+  <artifactId>dashj-interface</artifactId>
+  <version>0.9.1</version>
 </dependency>
 ```
