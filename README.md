@@ -1,7 +1,7 @@
 # dashj-interface
 Smart wrapper for DashJ library making development of Dash enabled apps for Android much easier.
 
-## Code samples (V2.3.1)
+## Code samples
 
 Displaying blockchain sync progress: 
 ```kotlin
