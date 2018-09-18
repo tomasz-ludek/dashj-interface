@@ -1,4 +1,33 @@
 # dashj-interface
+Smart wrapper for DashJ library making development of Dash enabled apps for Android much easier.
+
+## Code samples (V2.3.1)
+
+Displaying blockchain sync progress: 
+```kotlin
+viewModel.blockchainState.observe(this, Observer {
+    messageView.text =
+            "bestChainDate: ${it!!.bestChainDate}\n" +
+            "bestChainHeight: ${it.bestChainHeight}\n" +
+            "blocksLeft: ${it.blocksLeft}\n"
+})
+```
+
+Sending funds: 
+```kotlin
+viewModel.sendFunds("yi8eWv9S3pmHo5ZLuQn6ftwik4AYN2WHd6", Coin.COIN,
+        object : WalletAppKitService.Result<Transaction> {
+
+            override fun onSuccess(tx: Transaction) {
+                messageView.text = "Sent: ${tx.hashAsString}"
+            }
+
+            override fun onFailure(ex: Exception) {
+                messageView.text = "Failure: ${ex.message}"
+            }
+        }
+)
+```
 
 Add dashj-interface to your project
 ----------------------------
