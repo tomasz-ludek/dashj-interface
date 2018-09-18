@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
+import android.support.v4.content.ContextCompat
 import org.bitcoinj.core.*
 import org.bitcoinj.kits.WalletAppKit
 import org.bitcoinj.utils.Threading
@@ -26,7 +27,8 @@ class WalletAppKitService : Service() {
 
         fun init(context: Context) {
             val walletAppKitServiceIntent = Intent(context, WalletAppKitService::class.java)
-            context.startService(walletAppKitServiceIntent)
+//            context.startService(walletAppKitServiceIntent)
+            ContextCompat.startForegroundService(context, walletAppKitServiceIntent)
         }
     }
 

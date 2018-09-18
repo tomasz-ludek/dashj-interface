@@ -1,5 +1,6 @@
 package org.dashj.dashjinterface.ui.main
 
+import android.annotation.SuppressLint
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
@@ -31,35 +32,43 @@ class MainFragment : Fragment() {
         return layoutView
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
-        viewModel.walletInfoLiveData.observe(this, Observer { walletInfo ->
-            layoutView.message1.text = "networkParameters: ${walletInfo!!.networkParameters.javaClass.simpleName}\nbalance: ${walletInfo.balance.toFriendlyString()}\naddress: ${walletInfo.currentReceiveAddress}\n"
-            layoutView.message1.setOnClickListener {
-                Log.d("currentReceiveAddress", "${walletInfo.currentReceiveAddress}")
+        viewModel.walletInfoLiveData.observe(this, Observer {
+            layoutView.message1.text =
+                    "networkParameters: ${it!!.networkParameters.javaClass.simpleName}\n" +
+                    "balance: ${it.balance.toFriendlyString()}\n" +
+                    "address: ${it.currentReceiveAddress}\n"
+            layoutView.message1.setOnClickListener { _ ->
+                Log.d("currentReceiveAddress", "${it.currentReceiveAddress}")
             }
         })
-        viewModel.peerConnectivity.observe(this, Observer { peerList ->
-            layoutView.message2.text = "peers: ${peerList!!.size}\n${peerList}\n"
+        viewModel.peerConnectivity.observe(this, Observer {
+            layoutView.message2.text =
+                    "peers: ${it!!.size}\n" +
+                    "${it}\n"
         })
-        viewModel.blockchainState.observe(this, Observer { blockchainState ->
-            blockchainState?.let {
-                layoutView.message3.text = "bestChainDate: ${DateUtil.format(it.bestChainDate)}\nbestChainHeight: ${it.bestChainHeight}\nblocksLeft: ${it.blocksLeft}\n"
-            }
+        viewModel.blockchainState.observe(this, Observer {
+            layoutView.message3.text =
+                    "bestChainDate: ${DateUtil.format(it!!.bestChainDate)}\n" +
+                    "bestChainHeight: ${it.bestChainHeight}\n" +
+                    "blocksLeft: ${it.blocksLeft}\n"
         })
-        viewModel.masternodeSync.observe(this, Observer { data ->
-            val status = data!!.first.name.replace("MASTERNODE", "MN")
-            layoutView.message4.text = "${layoutView.message4.text}${DateUtil.format(Date())} $status\n"
+        viewModel.masternodeSync.observe(this, Observer {
+            val status = it!!.first.name.replace("MASTERNODE", "MN")
+            layoutView.message4.text =
+                    "${layoutView.message4.text}${DateUtil.format(Date())} $status\n"
         })
-        viewModel.masternodes.observe(this, Observer { masternodes ->
-            masternodes?.let {
+        viewModel.masternodes.observe(this, Observer {
+            it?.let { _ ->
                 layoutView.message5.text = "masternodes: ${it.size}"//\n$masternodes\n"
             }
         })
-        viewModel.governanceObjects.observe(this, Observer { governanceObjects ->
-            governanceObjects?.let {
+        viewModel.governanceObjects.observe(this, Observer {
+            it?.let { _ ->
                 layoutView.message6.text = "governanceObjects: ${it.size}\n"//\governanceObjects\n"
             }
         })
