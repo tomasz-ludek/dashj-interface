@@ -5,7 +5,6 @@ import org.bitcoinj.core.Address
 import org.bitcoinj.core.Coin
 import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.core.Transaction
-import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.Wallet
 import org.bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener
 import org.bitcoinj.wallet.listeners.WalletCoinsSentEventListener
@@ -16,8 +15,8 @@ class WalletInfoLiveData(application: Application) :
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
         val wallet = walletAppKitService.wallet
-        wallet.addCoinsReceivedEventListener(Threading.SAME_THREAD, this)
-        wallet.addCoinsSentEventListener(Threading.SAME_THREAD, this)
+        wallet.addCoinsReceivedEventListener(this)
+        wallet.addCoinsSentEventListener(this)
         postValue(WalletInfo(wallet.balance, wallet.currentReceiveAddress(), wallet.networkParameters))
     }
 

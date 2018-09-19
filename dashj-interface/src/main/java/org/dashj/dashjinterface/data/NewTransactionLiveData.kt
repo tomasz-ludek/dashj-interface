@@ -3,7 +3,6 @@ package org.dashj.dashjinterface.data
 import android.app.Application
 import org.bitcoinj.core.Coin
 import org.bitcoinj.core.Transaction
-import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.Wallet
 import org.bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener
 import org.bitcoinj.wallet.listeners.WalletCoinsSentEventListener
@@ -13,8 +12,8 @@ class NewTransactionLiveData(application: Application) :
         WalletAppKitServiceLiveData<Transaction>(application), WalletCoinsReceivedEventListener, WalletCoinsSentEventListener {
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
-        walletAppKitService.wallet.addCoinsReceivedEventListener(Threading.SAME_THREAD, this)
-        walletAppKitService.wallet.addCoinsSentEventListener(Threading.SAME_THREAD, this)
+        walletAppKitService.wallet.addCoinsReceivedEventListener(this)
+        walletAppKitService.wallet.addCoinsSentEventListener(this)
     }
 
     override fun onInactive(walletAppKitService: WalletAppKitService) {

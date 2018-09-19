@@ -4,14 +4,13 @@ import android.app.Application
 import org.bitcoinj.core.Sha256Hash
 import org.bitcoinj.governance.GovernanceObject
 import org.bitcoinj.governance.listeners.GovernanceManagerListener
-import org.bitcoinj.utils.Threading
 import org.dashj.dashjinterface.WalletAppKitService
 
 class GovernanceLiveData(application: Application) :
         WalletAppKitServiceLiveData<List<GovernanceObject>>(application), GovernanceManagerListener {
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
-        walletAppKitService.wallet.context.governanceManager.addEventListener(this, Threading.SAME_THREAD)
+        walletAppKitService.wallet.context.governanceManager.addEventListener(this)
     }
 
     override fun onInactive(walletAppKitService: WalletAppKitService) {

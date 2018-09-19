@@ -4,15 +4,14 @@ import android.app.Application
 import org.bitcoinj.core.Peer
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
 import org.bitcoinj.core.listeners.PeerDisconnectedEventListener
-import org.bitcoinj.utils.Threading
 import org.dashj.dashjinterface.WalletAppKitService
 
 class PeerConnectivityLiveData(application: Application) :
         WalletAppKitServiceLiveData<List<Peer>>(application), PeerConnectedEventListener, PeerDisconnectedEventListener {
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
-        walletAppKitService.peerGroup.addConnectedEventListener(Threading.SAME_THREAD, this)
-        walletAppKitService.peerGroup.addDisconnectedEventListener(Threading.SAME_THREAD, this)
+        walletAppKitService.peerGroup.addConnectedEventListener(this)
+        walletAppKitService.peerGroup.addDisconnectedEventListener(this)
     }
 
     override fun onInactive(walletAppKitService: WalletAppKitService) {

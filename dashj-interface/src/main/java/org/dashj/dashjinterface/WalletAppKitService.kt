@@ -14,6 +14,8 @@ import org.bitcoinj.wallet.Wallet
 import org.dashj.dashjinterface.config.KitConfigTestnet
 import org.dashj.dashjinterface.config.WalletAppKitConfig
 import org.dashj.dashjinterface.data.BlockchainState
+import org.dashj.dashjinterface.util.MainPreferences
+import org.dashj.dashjinterface.util.NotificationAgent
 import java.util.concurrent.Executor
 
 
@@ -27,13 +29,15 @@ class WalletAppKitService : Service() {
 
         fun init(context: Context) {
             val walletAppKitServiceIntent = Intent(context, WalletAppKitService::class.java)
-//            context.startService(walletAppKitServiceIntent)
             ContextCompat.startForegroundService(context, walletAppKitServiceIntent)
         }
     }
 
     private lateinit var kit: WalletAppKit
     private lateinit var kitConfig: WalletAppKitConfig
+    private lateinit var preferences: MainPreferences
+    private lateinit var notificationAgent: NotificationAgent
+
     private val mBinder = LocalBinder()
     private var isSetupComplete = false
     private val onSetupCompleteListeners = mutableListOf<OnSetupCompleteListener>()
@@ -69,6 +73,10 @@ class WalletAppKitService : Service() {
         }
 
         kitConfig = KitConfigTestnet()
+
+        preferences = MainPreferences(applicationContext)
+        notificationAgent = NotificationAgent(this)
+        startForeground(NotificationAgent.SYNC_NOTIFICATION_ID, notificationAgent.syncNotification)
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -98,6 +106,23 @@ class WalletAppKitService : Service() {
             if (it.keyChainGroupSize < 1) {
                 it.importKey(ECKey())
             }
+        }
+        wallet.context.masternodeSync.addEventListener { newStatus, _ ->
+            if (newStatus == MasternodeSync.MASTERNODE_SYNC_FINISHED) {
+                preferences.fullSyncDate = System.currentTimeMillis()
+                stopForeground(true)
+                stopSelf()
+            }
+        }
+//        kit.setDownloadListener(object : DownloadProgressTracker() {
+//            override fun progress(pct: Double, blocksSoFar: Int, date: Date) {
+//                updateSyncNotification(date.toString(), pct.toInt())
+//            }
+//        })
+        wallet.context.peerGroup.addBlocksDownloadedEventListener { peer, block, filteredBlock, blocksLeft ->
+            val chainHeadHeight = kit.chain().chainHead.height
+            val mostCommonChainHeight = kit.peerGroup().mostCommonChainHeight
+            notificationAgent.updateSyncProgress(this, mostCommonChainHeight, chainHeadHeight)
         }
 
         kitConfig.getCheckpoints(this)?.let {

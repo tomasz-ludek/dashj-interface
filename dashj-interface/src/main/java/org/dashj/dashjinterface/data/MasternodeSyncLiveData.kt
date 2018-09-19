@@ -1,15 +1,15 @@
 package org.dashj.dashjinterface.data
 
 import android.app.Application
+import org.bitcoinj.core.MasternodeSync
 import org.bitcoinj.core.MasternodeSyncListener
-import org.bitcoinj.utils.Threading
 import org.dashj.dashjinterface.WalletAppKitService
 
 class MasternodeSyncLiveData(application: Application)
     : WalletAppKitServiceLiveData<Pair<MasternodeSyncLiveData.MasternodeSyncStatus, Double>>(application), MasternodeSyncListener {
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
-        walletAppKitService.wallet.context.masternodeSync.addEventListener(this, Threading.SAME_THREAD)
+        walletAppKitService.wallet.context.masternodeSync.addEventListener(this)
     }
 
     override fun onInactive(walletAppKitService: WalletAppKitService) {
@@ -37,15 +37,15 @@ class MasternodeSyncLiveData(application: Application)
         companion object {
 
             fun valueOf(value: Int) = when (value) {
-                -1 -> MASTERNODE_SYNC_FAILED
-                0 -> MASTERNODE_SYNC_INITIAL
-                1 -> MASTERNODE_SYNC_WAITING
-                2 -> MASTERNODE_SYNC_LIST
-                3 -> MASTERNODE_SYNC_MNW
-                4 -> MASTERNODE_SYNC_GOVERNANCE
-                10 -> MASTERNODE_SYNC_GOVOBJ
-                11 -> MASTERNODE_SYNC_GOVOBJ_VOTE
-                999 -> MASTERNODE_SYNC_FINISHED
+                MasternodeSync.MASTERNODE_SYNC_FAILED -> MASTERNODE_SYNC_FAILED
+                MasternodeSync.MASTERNODE_SYNC_INITIAL -> MASTERNODE_SYNC_INITIAL
+                MasternodeSync.MASTERNODE_SYNC_WAITING -> MASTERNODE_SYNC_WAITING
+                MasternodeSync.MASTERNODE_SYNC_LIST -> MASTERNODE_SYNC_LIST
+                MasternodeSync.MASTERNODE_SYNC_MNW -> MASTERNODE_SYNC_MNW
+                MasternodeSync.MASTERNODE_SYNC_GOVERNANCE -> MASTERNODE_SYNC_GOVERNANCE
+                MasternodeSync.MASTERNODE_SYNC_GOVOBJ -> MASTERNODE_SYNC_GOVOBJ
+                MasternodeSync.MASTERNODE_SYNC_GOVOBJ_VOTE -> MASTERNODE_SYNC_GOVOBJ_VOTE
+                MasternodeSync.MASTERNODE_SYNC_FINISHED -> MASTERNODE_SYNC_FINISHED
                 else -> throw IllegalArgumentException("Unsupported sync status $value")
             }
         }

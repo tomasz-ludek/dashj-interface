@@ -3,14 +3,13 @@ package org.dashj.dashjinterface.data
 import android.app.Application
 import org.bitcoinj.core.Masternode
 import org.bitcoinj.core.MasternodeManagerListener
-import org.bitcoinj.utils.Threading
 import org.dashj.dashjinterface.WalletAppKitService
 
 class MasternodesLiveData(application: Application) :
         WalletAppKitServiceLiveData<List<Masternode>>(application), MasternodeManagerListener {
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
-        walletAppKitService.wallet.context.masternodeManager.addEventListener(this, Threading.SAME_THREAD)
+        walletAppKitService.wallet.context.masternodeManager.addEventListener(this)
     }
 
     override fun onInactive(walletAppKitService: WalletAppKitService) {

@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">DashWalletKit</string>
+
+    <string name="sync_notification_channel_name">Synchronization</string>
+    <string name="sync_notification_channel_description">Displays the progress of Dash network synchronization</string>
+
+    <string name="sync_notification_init_message">Connecting to Dash network</string>
+    <string name="sync_notification_message">Synchronizing blockchain</string>
+
 </resources>

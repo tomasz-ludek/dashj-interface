@@ -12,7 +12,7 @@ open class DjInterfaceViewModel(application: Application) : AndroidViewModel(app
     val djService: DjServiceLiveData
         get() = _djService
 
-    public fun sendFunds(address: String, amount: Coin, result: WalletAppKitService.Result<Transaction>) {
+    fun sendFunds(address: String, amount: Coin, result: WalletAppKitService.Result<Transaction>) {
         djService.value?.sendFunds(address, amount, result)
     }
 }
