@@ -11,11 +11,11 @@ class BlockchainStateLiveData(application: Application) :
         WalletAppKitServiceLiveData<BlockchainState>(application), BlocksDownloadedEventListener {
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
-        walletAppKitService.peerGroup.addBlocksDownloadedEventListener(this)
+        walletAppKitService.peerGroup!!.addBlocksDownloadedEventListener(this)
     }
 
     override fun onInactive(walletAppKitService: WalletAppKitService) {
-        walletAppKitService.peerGroup.removeBlocksDownloadedEventListener(this)
+        walletAppKitService.peerGroup?.removeBlocksDownloadedEventListener(this)
     }
 
     override fun onBlocksDownloaded(peer: Peer, block: Block, filteredBlock: FilteredBlock?, blocksLeft: Int) {

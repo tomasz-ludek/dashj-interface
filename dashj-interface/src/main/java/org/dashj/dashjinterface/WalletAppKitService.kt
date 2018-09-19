@@ -57,7 +57,7 @@ class WalletAppKitService : Service() {
     val wallet: Wallet
         get() = kit.wallet()
 
-    val peerGroup: PeerGroup
+    val peerGroup: PeerGroup?
         get() = kit.peerGroup()
 
     inner class LocalBinder : Binder() {
@@ -99,8 +99,8 @@ class WalletAppKitService : Service() {
     private fun onSetupCompleted() {
         isSetupComplete = true
 
-        peerGroup.minBroadcastConnections = MIN_BROADCAST_CONNECTIONS
-        peerGroup.maxConnections = MAX_CONNECTIONS
+        peerGroup!!.minBroadcastConnections = MIN_BROADCAST_CONNECTIONS
+        peerGroup!!.maxConnections = MAX_CONNECTIONS
 
         wallet.let {
             if (it.keyChainGroupSize < 1) {
@@ -119,7 +119,7 @@ class WalletAppKitService : Service() {
 //                updateSyncNotification(date.toString(), pct.toInt())
 //            }
 //        })
-        wallet.context.peerGroup.addBlocksDownloadedEventListener { peer, block, filteredBlock, blocksLeft ->
+        wallet.context.peerGroup.addBlocksDownloadedEventListener { _, _, _, _ ->
             val chainHeadHeight = kit.chain().chainHead.height
             val mostCommonChainHeight = kit.peerGroup().mostCommonChainHeight
             notificationAgent.updateSyncProgress(this, mostCommonChainHeight, chainHeadHeight)
