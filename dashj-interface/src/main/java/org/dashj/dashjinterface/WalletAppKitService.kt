@@ -7,8 +7,10 @@ import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.support.v4.content.ContextCompat
+import android.util.Log
 import org.bitcoinj.core.*
 import org.bitcoinj.kits.WalletAppKit
+import org.bitcoinj.store.BlockStore
 import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.Wallet
 import org.dashj.dashjinterface.config.KitConfigTestnet
@@ -27,6 +29,7 @@ class WalletAppKitService : Service() {
         private const val MIN_BROADCAST_CONNECTIONS = 2
         private const val MAX_CONNECTIONS = 14
 
+        @JvmStatic
         fun init(context: Context) {
             val walletAppKitServiceIntent = Intent(context, WalletAppKitService::class.java)
             ContextCompat.startForegroundService(context, walletAppKitServiceIntent)
@@ -54,10 +57,16 @@ class WalletAppKitService : Service() {
             return BlockchainState(bestChainDate, bestChainHeight, blocksLeft)
         }
 
+    val chain: BlockChain
+        get() = kit.chain()
+
+    val store: BlockStore
+        get() = kit.store()
+
     val wallet: Wallet
         get() = kit.wallet()
 
-    val peerGroup: PeerGroup?
+    val peerGroup: PeerGroup
         get() = kit.peerGroup()
 
     inner class LocalBinder : Binder() {
@@ -114,11 +123,6 @@ class WalletAppKitService : Service() {
                 stopSelf()
             }
         }
-//        kit.setDownloadListener(object : DownloadProgressTracker() {
-//            override fun progress(pct: Double, blocksSoFar: Int, date: Date) {
-//                updateSyncNotification(date.toString(), pct.toInt())
-//            }
-//        })
         wallet.context.peerGroup.addBlocksDownloadedEventListener { _, _, _, _ ->
             val chainHeadHeight = kit.chain().chainHead.height
             val mostCommonChainHeight = kit.peerGroup().mostCommonChainHeight

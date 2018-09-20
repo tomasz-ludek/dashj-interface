@@ -4,48 +4,45 @@ import android.app.Application
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.Coin
 import org.bitcoinj.core.NetworkParameters
-import org.bitcoinj.core.Transaction
 import org.bitcoinj.wallet.Wallet
-import org.bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener
-import org.bitcoinj.wallet.listeners.WalletCoinsSentEventListener
+import org.bitcoinj.wallet.listeners.WalletChangeEventListener
 import org.dashj.dashjinterface.WalletAppKitService
 
 class WalletInfoLiveData(application: Application) :
-        WalletAppKitServiceLiveData<WalletInfoLiveData.WalletInfo>(application), WalletCoinsReceivedEventListener, WalletCoinsSentEventListener {
+        WalletAppKitServiceLiveData<WalletInfoLiveData.Data>(application), WalletChangeEventListener {
+
+    private lateinit var wallet: Wallet
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
-        val wallet = walletAppKitService.wallet
-        wallet.addCoinsReceivedEventListener(this)
-        wallet.addCoinsSentEventListener(this)
-        postValue(WalletInfo(wallet.balance, wallet.currentReceiveAddress(), wallet.networkParameters))
+        wallet = walletAppKitService.wallet
+        wallet.addChangeEventListener(this)
+        updateData()
     }
 
     override fun onInactive(walletAppKitService: WalletAppKitService) {
-        val wallet = walletAppKitService.wallet
-        wallet.removeCoinsSentEventListener(this)
-        wallet.removeCoinsReceivedEventListener(this)
+        wallet.removeChangeEventListener(this)
     }
 
-    override fun onCoinsReceived(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-        postValue(WalletInfo(newBalance, wallet.currentReceiveAddress(), wallet.networkParameters))
+    override fun onWalletChanged(wallet: Wallet) {
+        updateData()
     }
 
-    override fun onCoinsSent(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-        postValue(WalletInfo(newBalance, wallet.currentReceiveAddress(), wallet.networkParameters))
+    private fun updateData() {
+        postValue(Data(wallet.balance, wallet.currentReceiveAddress(), wallet.networkParameters))
     }
 
-    class WalletInfo(
+    class Data(
             private val _balance: Coin,
             private val _currentReceiveAddress: Address,
             private val _networkParameters: NetworkParameters) {
 
-        val balance: Coin
+        val balance
             get() = _balance
 
-        val currentReceiveAddress: Address
+        val currentReceiveAddress
             get() = _currentReceiveAddress
 
-        val networkParameters: NetworkParameters
+        val networkParameters
             get() = _networkParameters
     }
 }
