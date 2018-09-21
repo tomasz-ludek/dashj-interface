@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import org.dashj.dashjinterface.WalletAppKitService
+import java.util.concurrent.atomic.AtomicBoolean
 
 open class WalletAppKitServiceLiveData<T>(private val application: Application)
     : LiveData<T>(), ServiceConnection, WalletAppKitService.OnSetupCompleteListener {
@@ -16,13 +17,18 @@ open class WalletAppKitServiceLiveData<T>(private val application: Application)
     protected val walletAppKitService: WalletAppKitService?
         get() = _walletAppKitService
 
+    private val wasCustomOnActiveCalled = AtomicBoolean(false)
+
     override fun onActive() {
         application.bindService(Intent(application, WalletAppKitService::class.java), this, Context.BIND_AUTO_CREATE)
     }
 
     override fun onInactive() {
         _walletAppKitService?.let {
-            onInactive(it)
+            if (wasCustomOnActiveCalled.get()) {
+                onInactive(it)
+                wasCustomOnActiveCalled.set(false)
+            }
             it.unregisterListener(this)
         }
         application.unbindService(this)
@@ -40,6 +46,7 @@ open class WalletAppKitServiceLiveData<T>(private val application: Application)
     override fun onServiceSetupComplete() {
         _walletAppKitService?.let {
             onActive(it)
+            wasCustomOnActiveCalled.set(true)
         }
     }
 
