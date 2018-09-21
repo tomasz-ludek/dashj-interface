@@ -8,6 +8,7 @@ class MainNetConfig : WalletConfig(
 
     companion object {
         const val NAME = "mainnet"
+        @JvmStatic
         fun get() = MainNetConfig()
     }
 }

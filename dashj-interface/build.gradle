@@ -62,7 +62,7 @@ ext {
     siteUrl = 'https://github.com/tomasz-ludek/dashj-interface'
     gitUrl = 'https://github.com/tomasz-ludek/dashj-interface/issues.git'
 
-    libraryVersion = '0.9.10'
+    libraryVersion = '0.9.11'
 
     developerId = 'tomasz-ludek'
     developerName = 'Tomasz Ludek'

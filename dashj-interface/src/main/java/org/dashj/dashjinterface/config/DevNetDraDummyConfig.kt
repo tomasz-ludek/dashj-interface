@@ -9,6 +9,7 @@ class DevNetDraDummyConfig : WalletConfig(
 
     companion object {
         const val NAME = "dummy (devnet-DRA)"
+        @JvmStatic
         fun get() = DevNetDraDummyConfig()
     }
 }

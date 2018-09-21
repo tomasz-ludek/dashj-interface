@@ -9,6 +9,7 @@ class TestNetDummyConfig : WalletConfig(
 
     companion object {
         const val NAME = "dummy (testnet)"
+        @JvmStatic
         fun get() = TestNetDummyConfig()
     }
 }

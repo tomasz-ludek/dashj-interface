@@ -8,6 +8,7 @@ class TestNetConfig : WalletConfig(
 
     companion object {
         const val NAME = "testnet"
+        @JvmStatic
         fun get() = TestNetConfig()
     }
 }

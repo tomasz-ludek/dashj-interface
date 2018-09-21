@@ -7,6 +7,7 @@ class DevNetDraConfig : WalletConfig(
 
     companion object {
         const val NAME = "devnet-DRA"
+        @JvmStatic
         fun get() = DevNetDraConfig()
     }
 }
