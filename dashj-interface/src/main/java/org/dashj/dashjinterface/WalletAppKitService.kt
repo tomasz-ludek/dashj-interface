@@ -7,37 +7,61 @@ import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.support.v4.content.ContextCompat
-import android.util.Log
 import org.bitcoinj.core.*
+import org.bitcoinj.core.listeners.BlocksDownloadedEventListener
 import org.bitcoinj.kits.WalletAppKit
 import org.bitcoinj.store.BlockStore
 import org.bitcoinj.utils.Threading
+import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.wallet.Wallet
-import org.dashj.dashjinterface.config.KitConfigTestnet
-import org.dashj.dashjinterface.config.WalletAppKitConfig
+import org.dashj.dashjinterface.config.TestNetConfig
+import org.dashj.dashjinterface.config.WalletConfig
 import org.dashj.dashjinterface.data.BlockchainState
 import org.dashj.dashjinterface.util.MainPreferences
 import org.dashj.dashjinterface.util.NotificationAgent
 import java.util.concurrent.Executor
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 class WalletAppKitService : Service() {
 
     companion object {
         private val TAG = WalletAppKitService::class.java.canonicalName
-        private const val WALLET_APP_KIT_DIR = "walletappkit"
+
+        private const val ACTION_START = "action_start"
+        private const val ACTION_STOP = "action_stop"
+
+        private const val EXTRA_WALLET_CONFIG = "extra_wallet_config"
+
         private const val MIN_BROADCAST_CONNECTIONS = 2
         private const val MAX_CONNECTIONS = 14
+        private const val EARLIEST_HD_SEED_CREATION_TIME = 1427610960L
+
+        private var deactivated = AtomicBoolean(false)
 
         @JvmStatic
         fun init(context: Context) {
-            val walletAppKitServiceIntent = Intent(context, WalletAppKitService::class.java)
-            ContextCompat.startForegroundService(context, walletAppKitServiceIntent)
+            init(context, TestNetConfig())
+        }
+
+        @JvmStatic
+        fun init(context: Context, walletConfig: WalletConfig) {
+            val intent = Intent(context, WalletAppKitService::class.java)
+            intent.action = ACTION_START
+            intent.putExtra(EXTRA_WALLET_CONFIG, walletConfig)
+            ContextCompat.startForegroundService(context, intent)
+        }
+
+        @JvmStatic
+        fun stop(context: Context) {
+            val intent = Intent(context, WalletAppKitService::class.java)
+            intent.action = ACTION_STOP
+            ContextCompat.startForegroundService(context, intent)
         }
     }
 
     private lateinit var kit: WalletAppKit
-    private lateinit var kitConfig: WalletAppKitConfig
+    private lateinit var walletConfig: WalletConfig
     private lateinit var preferences: MainPreferences
     private lateinit var notificationAgent: NotificationAgent
 
@@ -47,9 +71,9 @@ class WalletAppKitService : Service() {
 
     private val mainThreadHandler = Handler()
 
-    val blockchainState: BlockchainState?
-        get() = kit.chain()?.let {
-            val chainHead = kit.chain().chainHead
+    val blockchainState: BlockchainState
+        get() = kit.chain().let {
+            val chainHead = it.chainHead
             val bestChainDate = chainHead.header.time
             val bestChainHeight = chainHead.height
             val blocksLeft = kit.peerGroup().mostCommonChainHeight - chainHead.height
@@ -69,6 +93,9 @@ class WalletAppKitService : Service() {
     val peerGroup: PeerGroup
         get() = kit.peerGroup()
 
+    val walletName
+        get() = walletConfig.name
+
     inner class LocalBinder : Binder() {
         val service: WalletAppKitService
             get() = this@WalletAppKitService
@@ -81,8 +108,6 @@ class WalletAppKitService : Service() {
             mainThreadHandler.post(it)
         }
 
-        kitConfig = KitConfigTestnet()
-
         preferences = MainPreferences(applicationContext)
         notificationAgent = NotificationAgent(this)
         startForeground(NotificationAgent.SYNC_NOTIFICATION_ID, notificationAgent.syncNotification)
@@ -90,16 +115,30 @@ class WalletAppKitService : Service() {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        initWalletAppKit()
-        return Service.START_NOT_STICKY
+        when (intent.action) {
+            ACTION_START -> {
+                walletConfig = intent.getParcelableExtra(EXTRA_WALLET_CONFIG)
+                initWalletAppKit()
+            }
+            ACTION_STOP -> {
+                stopForeground(true)
+                stopSelf()
+            }
+            else -> throw UnsupportedOperationException("Unsupported action ${intent.action}")
+        }
+        return Service.START_REDELIVER_INTENT
     }
 
     private fun initWalletAppKit() {
-        val walletAppKitDir = application.getDir(WALLET_APP_KIT_DIR, Context.MODE_PRIVATE)
-        kit = object : WalletAppKit(kitConfig.networkParams, walletAppKitDir, kitConfig.filesPrefix, false) {
+        val walletAppKitDir = application.getDir(walletConfig.filesPrefix, Context.MODE_PRIVATE)
+        kit = object : WalletAppKit(walletConfig.networkParams, walletAppKitDir, walletConfig.filesPrefix, false) {
             override fun onSetupCompleted() {
                 this@WalletAppKitService.onSetupCompleted()
             }
+        }
+        if (walletConfig.seedBased && walletAppKitDir.list().isEmpty()) {
+            val deterministicSeed = DeterministicSeed(walletConfig.seed, null, "", EARLIEST_HD_SEED_CREATION_TIME)
+            kit.restoreWalletFromSeed(deterministicSeed)
         }
         kit.setAutoSave(true)
         kit.startAsync()
@@ -108,32 +147,42 @@ class WalletAppKitService : Service() {
     private fun onSetupCompleted() {
         isSetupComplete = true
 
-        peerGroup!!.minBroadcastConnections = MIN_BROADCAST_CONNECTIONS
-        peerGroup!!.maxConnections = MAX_CONNECTIONS
+        peerGroup.minBroadcastConnections = MIN_BROADCAST_CONNECTIONS
+        peerGroup.maxConnections = MAX_CONNECTIONS
 
         wallet.let {
             if (it.keyChainGroupSize < 1) {
                 it.importKey(ECKey())
             }
         }
-        wallet.context.masternodeSync.addEventListener { newStatus, _ ->
-            if (newStatus == MasternodeSync.MASTERNODE_SYNC_FINISHED) {
-                preferences.fullSyncDate = System.currentTimeMillis()
-                stopForeground(true)
-                stopSelf()
-            }
-        }
-        wallet.context.peerGroup.addBlocksDownloadedEventListener { _, _, _, _ ->
-            val chainHeadHeight = kit.chain().chainHead.height
-            val mostCommonChainHeight = kit.peerGroup().mostCommonChainHeight
-            notificationAgent.updateSyncProgress(this, mostCommonChainHeight, chainHeadHeight)
-        }
+        wallet.context.masternodeSync.addEventListener(masternodeSyncListener)
+        wallet.context.peerGroup.addBlocksDownloadedEventListener(blocksDownloadedEventListener)
 
-        kitConfig.getCheckpoints(this)?.let {
+        walletConfig.getCheckpoints(this)?.let {
             kit.setCheckpoints(it)
         }
 
         notifyOnSetupCompletedListeners()
+    }
+
+    private val blocksDownloadedEventListener = BlocksDownloadedEventListener { _, _, _, _ ->
+        if (deactivated.get()) {
+            return@BlocksDownloadedEventListener
+        }
+        val chainHeadHeight = kit.chain().chainHead.height
+        val mostCommonChainHeight = kit.peerGroup().mostCommonChainHeight
+        notificationAgent.updateSyncProgress(this, mostCommonChainHeight, chainHeadHeight)
+    }
+
+    private val masternodeSyncListener = MasternodeSyncListener { newStatus, _ ->
+        if (deactivated.get()) {
+            return@MasternodeSyncListener
+        }
+        if (newStatus == MasternodeSync.MASTERNODE_SYNC_FINISHED) {
+            preferences.fullSyncDate = System.currentTimeMillis()
+//                stopForeground(true)
+//                stopSelf()
+        }
     }
 
     fun sendFunds(address: String, amount: Coin, result: Result<Transaction>) {
@@ -172,9 +221,13 @@ class WalletAppKitService : Service() {
     }
 
     override fun onDestroy() {
+        deactivated.set(true)
         onSetupCompleteListeners.clear()
+        if (isSetupComplete) {
+            wallet.context.peerGroup.removeBlocksDownloadedEventListener(blocksDownloadedEventListener)
+            wallet.context.masternodeSync.removeEventListener(masternodeSyncListener)
+        }
         kit.stopAsync()
-        super.onDestroy()
     }
 
     interface OnSetupCompleteListener {

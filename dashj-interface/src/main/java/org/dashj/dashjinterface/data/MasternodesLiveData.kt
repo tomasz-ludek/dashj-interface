@@ -4,7 +4,6 @@ import android.app.Application
 import org.bitcoinj.core.Masternode
 import org.bitcoinj.core.MasternodeManager
 import org.bitcoinj.core.MasternodeManagerListener
-import org.bitcoinj.utils.Threading
 import org.dashj.dashjinterface.WalletAppKitService
 
 class MasternodesLiveData(application: Application) :
@@ -14,7 +13,7 @@ class MasternodesLiveData(application: Application) :
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
         masternodeManager = walletAppKitService.wallet.context.masternodeManager
-        masternodeManager.addEventListener(this, Threading.SAME_THREAD)
+        masternodeManager.addEventListener(this)
         updateValue()
     }
 

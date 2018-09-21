@@ -12,9 +12,11 @@ class WalletInfoLiveData(application: Application) :
         WalletAppKitServiceLiveData<WalletInfoLiveData.Data>(application), WalletChangeEventListener {
 
     private lateinit var wallet: Wallet
+    private lateinit var walletName: String
 
     override fun onActive(walletAppKitService: WalletAppKitService) {
         wallet = walletAppKitService.wallet
+        walletName = walletAppKitService.walletName
         wallet.addChangeEventListener(this)
         updateData()
     }
@@ -28,13 +30,17 @@ class WalletInfoLiveData(application: Application) :
     }
 
     private fun updateData() {
-        postValue(Data(wallet.balance, wallet.currentReceiveAddress(), wallet.networkParameters))
+        postValue(Data(walletName, wallet.balance, wallet.currentReceiveAddress(), wallet.networkParameters))
     }
 
     class Data(
+            private val _walletName: String,
             private val _balance: Coin,
             private val _currentReceiveAddress: Address,
             private val _networkParameters: NetworkParameters) {
+
+        val walletName
+            get() = _walletName
 
         val balance
             get() = _balance

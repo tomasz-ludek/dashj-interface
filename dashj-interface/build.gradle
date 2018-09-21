@@ -56,12 +56,13 @@ ext {
     libraryName = 'DashJInterface'
     artifact = 'dashj-interface'
 
-    libraryDescription = 'Sample description'
+//    libraryDescription = 'Sample library description'
+//    versionDescription = 'Sample version description'
 
     siteUrl = 'https://github.com/tomasz-ludek/dashj-interface'
     gitUrl = 'https://github.com/tomasz-ludek/dashj-interface/issues.git'
 
-    libraryVersion = '0.9.6'
+    libraryVersion = '0.9.10'
 
     developerId = 'tomasz-ludek'
     developerName = 'Tomasz Ludek'
@@ -88,7 +89,7 @@ install {
             artifactId artifact
 
             name libraryName
-            description libraryDescription
+//            description libraryDescription
             url siteUrl
 
             licenses {

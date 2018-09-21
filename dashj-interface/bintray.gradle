@@ -30,7 +30,7 @@ bintray {
     pkg {
         repo = bintrayRepo
         name = bintrayName
-        desc = libraryDescription
+//        desc = libraryDescription
         websiteUrl = siteUrl
         vcsUrl = gitUrl
         licenses = allLicenses
@@ -38,8 +38,8 @@ bintray {
         publish = true
         override = false
         publicDownloadNumbers = true
-        version {
-            desc = libraryDescription
-        }
+//        version {
+//            desc = versionDescription
+//        }
     }
 }
