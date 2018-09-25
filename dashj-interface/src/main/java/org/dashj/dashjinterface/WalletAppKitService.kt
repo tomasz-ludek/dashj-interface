@@ -9,16 +9,20 @@ import android.os.IBinder
 import android.support.v4.content.ContextCompat
 import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.BlocksDownloadedEventListener
+import org.bitcoinj.evolution.SubTxRegister
+import org.bitcoinj.kits.EvolutionWalletAppKit
 import org.bitcoinj.kits.WalletAppKit
 import org.bitcoinj.store.BlockStore
 import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.DeterministicSeed
+import org.bitcoinj.wallet.SendRequest
 import org.bitcoinj.wallet.Wallet
 import org.dashj.dashjinterface.config.TestNetConfig
 import org.dashj.dashjinterface.config.WalletConfig
 import org.dashj.dashjinterface.data.BlockchainState
 import org.dashj.dashjinterface.util.MainPreferences
 import org.dashj.dashjinterface.util.NotificationAgent
+import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -41,7 +45,7 @@ class WalletAppKitService : Service() {
 
         @JvmStatic
         fun init(context: Context) {
-            init(context, TestNetConfig())
+            init(context, TestNetConfig.get())
         }
 
         @JvmStatic
@@ -131,9 +135,20 @@ class WalletAppKitService : Service() {
 
     private fun initWalletAppKit() {
         val walletAppKitDir = application.getDir(walletConfig.filesPrefix, Context.MODE_PRIVATE)
-        kit = object : WalletAppKit(walletConfig.networkParams, walletAppKitDir, walletConfig.filesPrefix, false) {
-            override fun onSetupCompleted() {
-                this@WalletAppKitService.onSetupCompleted()
+        kit = when {
+            walletConfig.network == WalletConfig.Network.DEVNET_DRA -> {
+                object : EvolutionWalletAppKit(walletConfig.networkParams, walletAppKitDir, walletConfig.filesPrefix, false) {
+                    override fun onSetupCompleted() {
+                        this@WalletAppKitService.onSetupCompleted()
+                    }
+                }
+            }
+            else -> {
+                object : WalletAppKit(walletConfig.networkParams, walletAppKitDir, walletConfig.filesPrefix, false) {
+                    override fun onSetupCompleted() {
+                        this@WalletAppKitService.onSetupCompleted()
+                    }
+                }
             }
         }
         if (walletConfig.seedBased && walletAppKitDir.list().isEmpty()) {
@@ -192,6 +207,25 @@ class WalletAppKitService : Service() {
             sendCoinsResult.broadcastComplete.addListener(Runnable {
                 result.onSuccess(sendCoinsResult.tx)
             }, Threading.USER_THREAD)
+        } catch (ex: Exception) {
+            result.onFailure(ex)
+        }
+    }
+
+    fun createUser(result: Result<String>) {
+        try {
+            val amount = Coin.parseCoin("0.001")
+            val privKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(EvolutionWalletAppKit.EVOLUTION_ACCOUNT_PATH, false).privKeyBytes)
+            val subTxRegister = SubTxRegister(1, "dj-demo" + Random().nextInt() / 1000, privKey)
+            val req = SendRequest.forSubTxRegister(kit.params(), subTxRegister, amount)
+
+            val sendResult = kit.wallet().sendCoins(req)
+            val currentUser = kit.wallet().context.evoUserManager.getUser(sendResult.tx.hash)
+
+            sendResult.broadcastComplete.addListener(Runnable {
+                result.onSuccess("SubTxRegister! Transaction hash is " + sendResult.tx.hashAsString)
+            }, Threading.USER_THREAD)
+
         } catch (ex: Exception) {
             result.onFailure(ex)
         }

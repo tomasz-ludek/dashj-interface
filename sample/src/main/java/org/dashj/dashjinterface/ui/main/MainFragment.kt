@@ -3,6 +3,7 @@ package org.dashj.dashjinterface.ui.main
 import android.annotation.SuppressLint
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
+import android.graphics.Color
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.util.Log
@@ -12,9 +13,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import kotlinx.android.synthetic.main.main_fragment.view.*
 import org.bitcoinj.core.Coin
-import org.bitcoinj.core.Transaction
 import org.dashj.dashjinterface.R
-import org.dashj.dashjinterface.WalletAppKitService
 import java.util.*
 
 class MainFragment : Fragment() {
@@ -73,22 +72,25 @@ class MainFragment : Fragment() {
             }
         })
         layoutView.button.setOnClickListener {
-            viewModel.sendFunds("yi8eWv9S3pmHo5ZLuQn6ftwik4AYN2WHd6", Coin.COIN,
-                    object : WalletAppKitService.Result<Transaction> {
-
-                        override fun onSuccess(tx: Transaction) {
-                            layoutView.message7.text = "${layoutView.message7.text}\nSent: ${tx.hashAsString}"
-                        }
-
-                        override fun onFailure(ex: Exception) {
-                            layoutView.message7.text = "${layoutView.message7.text}\nFailure: ${ex.message}"
-                        }
-                    }
-            )
+            viewModel.sendFunds1("yXw7UUSCFMNqhKcnhanQkzRehwFQpqFmTP", Coin.parseCoin("99"))
         }
+        viewModel.showMessageAction.observe(this, Observer {
+            val isErrorMessage = it!!.first
+            val message = it.second
+            if (isErrorMessage) {
+                layoutView.message7.setTextColor(Color.RED)
+                layoutView.message7.text = "${layoutView.message7.text}\nSent: $message"
+            } else {
+                layoutView.message7.setTextColor(Color.GREEN)
+                layoutView.message7.text = "${layoutView.message7.text}\nFailure: $message"
+            }
+        })
         viewModel.djService.observe(this, Observer { djServiceLiveData ->
             Toast.makeText(activity, if (djServiceLiveData != null) "Connected" else "Disconnected", Toast.LENGTH_LONG).show()
         })
+        layoutView.createUserButton.setOnClickListener {
+            viewModel.createUser()
+        }
     }
 
 }
