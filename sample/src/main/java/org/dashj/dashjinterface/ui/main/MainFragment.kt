@@ -81,7 +81,7 @@ class MainFragment : Fragment() {
                 layoutView.message7.setTextColor(Color.RED)
                 layoutView.message7.text = "${layoutView.message7.text}\nSent: $message"
             } else {
-                layoutView.message7.setTextColor(Color.GREEN)
+                layoutView.message7.setTextColor(Color.BLUE)
                 layoutView.message7.text = "${layoutView.message7.text}\nFailure: $message"
             }
         })

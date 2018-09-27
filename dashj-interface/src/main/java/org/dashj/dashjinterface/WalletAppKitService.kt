@@ -7,9 +7,11 @@ import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.support.v4.content.ContextCompat
+import com.google.common.collect.ImmutableList
 import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.BlocksDownloadedEventListener
-import org.bitcoinj.evolution.SubTxRegister
+import org.bitcoinj.crypto.ChildNumber
+import org.bitcoinj.evolution.*
 import org.bitcoinj.kits.EvolutionWalletAppKit
 import org.bitcoinj.kits.WalletAppKit
 import org.bitcoinj.store.BlockStore
@@ -75,15 +77,16 @@ class WalletAppKitService : Service() {
 
     private val mainThreadHandler = Handler()
 
-    val blockchainState: BlockchainState
-        get() = kit.chain().let {
+    fun blockchainState(blocksLeft: Int): BlockchainState {
+        kit.chain().let {
             val chainHead = it.chainHead
             val bestChainDate = chainHead.header.time
             val bestChainHeight = chainHead.height
-            val blocksLeft = kit.peerGroup().mostCommonChainHeight - chainHead.height
+//            val blocksLeft = kit.peerGroup().mostCommonChainHeight - chainHead.height
 
             return BlockchainState(bestChainDate, bestChainHeight, blocksLeft)
         }
+    }
 
     val chain: BlockChain
         get() = kit.chain()
@@ -151,10 +154,12 @@ class WalletAppKitService : Service() {
                 }
             }
         }
+
         if (walletConfig.seedBased && walletAppKitDir.list().isEmpty()) {
             val deterministicSeed = DeterministicSeed(walletConfig.seed, null, "", EARLIEST_HD_SEED_CREATION_TIME)
             kit.restoreWalletFromSeed(deterministicSeed)
         }
+
         kit.setAutoSave(true)
         kit.startAsync()
     }
@@ -171,7 +176,7 @@ class WalletAppKitService : Service() {
             }
         }
         wallet.context.masternodeSync.addEventListener(masternodeSyncListener)
-        wallet.context.peerGroup.addBlocksDownloadedEventListener(blocksDownloadedEventListener)
+        peerGroup.addBlocksDownloadedEventListener(blocksDownloadedEventListener)
 
         walletConfig.getCheckpoints(this)?.let {
             kit.setCheckpoints(it)
@@ -180,19 +185,21 @@ class WalletAppKitService : Service() {
         notifyOnSetupCompletedListeners()
     }
 
-    private val blocksDownloadedEventListener = BlocksDownloadedEventListener { _, _, _, _ ->
+    private val blocksDownloadedEventListener = BlocksDownloadedEventListener { _, _, _, blocksLeft ->
         if (deactivated.get()) {
             return@BlocksDownloadedEventListener
         }
         val chainHeadHeight = kit.chain().chainHead.height
-        val mostCommonChainHeight = kit.peerGroup().mostCommonChainHeight
-        notificationAgent.updateSyncProgress(this, mostCommonChainHeight, chainHeadHeight)
+        val mostCommonChainHeight = if (blocksLeft > 0) kit.peerGroup().mostCommonChainHeight else chainHeadHeight
+//        Log.d(TAG, "mostCommonChainHeight: $mostCommonChainHeight, chainHeadHeight: $chainHeadHeight, blocksLeft: $blocksLeft")
+        notificationAgent.updateBlockchainSyncProgress(this, mostCommonChainHeight, chainHeadHeight)
     }
 
     private val masternodeSyncListener = MasternodeSyncListener { newStatus, _ ->
         if (deactivated.get()) {
             return@MasternodeSyncListener
         }
+        notificationAgent.updateMasternodeSyncProgress(this, newStatus)
         if (newStatus == MasternodeSync.MASTERNODE_SYNC_FINISHED) {
             preferences.fullSyncDate = System.currentTimeMillis()
 //                stopForeground(true)
@@ -212,7 +219,7 @@ class WalletAppKitService : Service() {
         }
     }
 
-    fun createUser(result: Result<String>) {
+    fun createUser(result: Result<Transaction>) {
         try {
             val amount = Coin.parseCoin("0.001")
             val privKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(EvolutionWalletAppKit.EVOLUTION_ACCOUNT_PATH, false).privKeyBytes)
@@ -220,10 +227,51 @@ class WalletAppKitService : Service() {
             val req = SendRequest.forSubTxRegister(kit.params(), subTxRegister, amount)
 
             val sendResult = kit.wallet().sendCoins(req)
-            val currentUser = kit.wallet().context.evoUserManager.getUser(sendResult.tx.hash)
 
             sendResult.broadcastComplete.addListener(Runnable {
-                result.onSuccess("SubTxRegister! Transaction hash is " + sendResult.tx.hashAsString)
+                result.onSuccess(sendResult.tx)
+            }, Threading.USER_THREAD)
+
+        } catch (ex: Exception) {
+            result.onFailure(ex)
+        }
+    }
+
+    fun topUpUser(user: EvolutionUser, credits: Coin, result: Result<Transaction>) {
+        topUpUser(user.regTxId, credits, result)
+    }
+
+    fun topUpUser(userRegTxId: Sha256Hash, credits: Coin, result: Result<Transaction>) {
+        try {
+            val topUp = SendRequest.forSubTxTopup(kit.params(),
+                    SubTxTopup(1, userRegTxId), credits)
+
+            val sendResult = kit.wallet().sendCoins(topUp)
+
+            sendResult.broadcastComplete.addListener(Runnable {
+                result.onSuccess(sendResult.tx)
+            }, Threading.USER_THREAD)
+
+        } catch (ex: Exception) {
+            result.onFailure(ex)
+        }
+    }
+
+    fun resetUser(user: EvolutionUser, result: Result<Transaction>) {
+        resetUser(user.regTxId, user.curSubTx, result)
+    }
+
+    fun resetUser(userRegTxId: Sha256Hash, userCurSubTx: Sha256Hash, result: Result<Transaction>) {
+        try {
+            val privKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(EvolutionWalletAppKit.EVOLUTION_ACCOUNT_PATH, false).privKeyBytes)
+            val newPrivKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(ImmutableList.of(ChildNumber.ONE_HARDENED), true).privKeyBytes)
+            val reset = SendRequest.forSubTxResetKey(kit.params(),
+                    SubTxResetKey(1, userRegTxId, userCurSubTx, SubTxTransition.EVO_TS_MIN_FEE, KeyId(newPrivKey.pubKeyHash), privKey))
+
+            val sendResult = kit.wallet().sendCoins(reset);
+
+            sendResult.broadcastComplete.addListener(Runnable {
+                result.onSuccess(sendResult.tx)
             }, Threading.USER_THREAD)
 
         } catch (ex: Exception) {

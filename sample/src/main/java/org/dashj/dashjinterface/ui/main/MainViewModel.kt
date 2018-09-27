@@ -42,8 +42,8 @@ class MainViewModel(application: Application) : DjInterfaceViewModel(application
     fun sendFunds1(address: String, amount: Coin) {
         djService.value?.sendFunds(address, amount, object : WalletAppKitService.Result<Transaction> {
 
-            override fun onSuccess(tx: Transaction) {
-                _showMessageAction.call(Pair(false, tx.hashAsString))
+            override fun onSuccess(result: Transaction) {
+                _showMessageAction.call(Pair(false, result.hashAsString))
             }
 
             override fun onFailure(ex: Exception) {
@@ -53,10 +53,10 @@ class MainViewModel(application: Application) : DjInterfaceViewModel(application
     }
 
     fun createUser() {
-        djService.value?.createUser(object : WalletAppKitService.Result<String> {
+        djService.value?.createUser(object : WalletAppKitService.Result<Transaction> {
 
-            override fun onSuccess(result: String) {
-                _showMessageAction.call(Pair(false, result))
+            override fun onSuccess(result: Transaction) {
+                _showMessageAction.call(Pair(false, result.hashAsString))
             }
 
             override fun onFailure(ex: Exception) {

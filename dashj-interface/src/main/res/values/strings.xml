@@ -6,5 +6,7 @@
 
     <string name="sync_notification_init_message">Connecting to Dash network</string>
     <string name="sync_notification_message">Synchronizing blockchain</string>
+    <string name="sync_masternode_notification_message">Synchronizing MN data</string>
+    <string name="sync_complete_notification_message">Synchronization complete</string>
 
 </resources>

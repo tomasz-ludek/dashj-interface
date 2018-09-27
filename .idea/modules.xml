@@ -4,7 +4,6 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/DashjInterface.iml" filepath="$PROJECT_DIR$/DashjInterface.iml" />
       <module fileurl="file://$PROJECT_DIR$/dashj-interface/dashj-interface.iml" filepath="$PROJECT_DIR$/dashj-interface/dashj-interface.iml" />
-      <module fileurl="file://$PROJECT_DIR$/dashj-interface/dashj-interface-dashj-interface.iml" filepath="$PROJECT_DIR$/dashj-interface/dashj-interface-dashj-interface.iml" />
       <module fileurl="file://$PROJECT_DIR$/sample/sample.iml" filepath="$PROJECT_DIR$/sample/sample.iml" />
     </modules>
   </component>
