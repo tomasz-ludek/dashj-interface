@@ -25,6 +25,14 @@
 
         <service android:name="org.dashj.dashjinterface.WalletAppKitService" />
 
+        <receiver
+            android:name="org.dashj.dashjinterface.NotificationClickReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="dashj.interface.action.NOTIFICATION_CLICK" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>
