@@ -40,10 +40,11 @@ dependencies {
 
 buildscript {
     repositories {
+        mavenLocal()
         jcenter()
     }
     dependencies {
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
     }
 }
@@ -62,7 +63,7 @@ ext {
     siteUrl = 'https://github.com/tomasz-ludek/dashj-interface'
     gitUrl = 'https://github.com/tomasz-ludek/dashj-interface/issues.git'
 
-    libraryVersion = '0.9.4'
+    libraryVersion = '1.0-SNAPSHOT'
 
     developerId = 'tomasz-ludek'
     developerName = 'Tomasz Ludek'
@@ -80,6 +81,16 @@ apply plugin: 'com.jfrog.bintray'
 
 group = publishedGroupId
 version = libraryVersion
+
+apply plugin: 'maven'
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: mavenLocal().getUrl())
+        }
+    }
+}
 
 install {
     repositories.mavenInstaller {
