@@ -5,7 +5,7 @@ import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.BlocksDownloadedEventListener
 import org.dashj.dashjinterface.WalletAppKitService
 
-open class BlocksDownloadProgressLiveData<T>(application: Application) :
+abstract class BlocksDownloadProgressLiveData<T>(application: Application) :
         WalletAppKitServiceAsyncLiveData<T>(application), BlocksDownloadedEventListener {
 
     protected lateinit var peerGroup: PeerGroup
@@ -27,14 +27,12 @@ open class BlocksDownloadProgressLiveData<T>(application: Application) :
         val chainHeadHeight = chain.chainHead.height
         val mostCommonChainHeight = if (blocksLeft > 0) peerGroup.mostCommonChainHeight else chainHeadHeight
         val progressPercentage = (chainHeadHeight.toFloat() / mostCommonChainHeight.toFloat() * 100).toInt()
-        // limit the number of updates
-        if (prevSyncProgress != progressPercentage) {
+        // limit the number of updates, but after full sync propagate each update
+        if ((prevSyncProgress != progressPercentage) or (prevSyncProgress == 100)) {
             progress(progressPercentage, blocksLeft)
         }
         prevSyncProgress = progressPercentage
     }
 
-    open fun progress(progress: Int, blocksLeft: Int) {
-
-    }
+    abstract fun progress(progress: Int, blocksLeft: Int)
 }

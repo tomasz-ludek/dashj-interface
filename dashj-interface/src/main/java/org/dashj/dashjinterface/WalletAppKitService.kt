@@ -10,10 +10,13 @@ import android.support.v4.content.ContextCompat
 import com.google.common.collect.ImmutableList
 import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.BlocksDownloadedEventListener
+import org.bitcoinj.core.listeners.PeerConnectedEventListener
+import org.bitcoinj.core.listeners.PeerDisconnectedEventListener
 import org.bitcoinj.crypto.ChildNumber
 import org.bitcoinj.evolution.*
 import org.bitcoinj.kits.EvolutionWalletAppKit
 import org.bitcoinj.kits.WalletAppKit
+import org.bitcoinj.params.DevNetParams
 import org.bitcoinj.store.BlockStore
 import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.DeterministicSeed
@@ -24,7 +27,6 @@ import org.dashj.dashjinterface.config.WalletConfig
 import org.dashj.dashjinterface.data.BlockchainState
 import org.dashj.dashjinterface.util.MainPreferences
 import org.dashj.dashjinterface.util.NotificationAgent
-import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -82,9 +84,15 @@ class WalletAppKitService : Service() {
             val chainHead = it.chainHead
             val bestChainDate = chainHead.header.time
             val bestChainHeight = chainHead.height
-//            val blocksLeft = kit.peerGroup().mostCommonChainHeight - chainHead.height
-
-            return BlockchainState(bestChainDate, bestChainHeight, blocksLeft)
+            val mostCommonChainHeight = kit.peerGroup().mostCommonChainHeight
+            val blocksLeftVal = when {
+                (blocksLeft < 0) -> when {
+                    (mostCommonChainHeight > 0) -> mostCommonChainHeight - chainHead.height
+                    else -> 0
+                }
+                else -> blocksLeft
+            }
+            return BlockchainState(bestChainDate, bestChainHeight, blocksLeftVal)
         }
     }
 
@@ -167,15 +175,16 @@ class WalletAppKitService : Service() {
     private fun onSetupCompleted() {
         isSetupComplete = true
 
+        if (wallet.networkParameters is DevNetParams) {
+            wallet.allowSpendingUnconfirmedTransactions()
+        }
+
         peerGroup.minBroadcastConnections = MIN_BROADCAST_CONNECTIONS
         peerGroup.maxConnections = MAX_CONNECTIONS
 
-        wallet.let {
-            if (it.keyChainGroupSize < 1) {
-                it.importKey(ECKey())
-            }
-        }
         wallet.context.masternodeSync.addEventListener(masternodeSyncListener)
+        peerGroup.addConnectedEventListener(peerConnectedEventListener)
+        peerGroup.addDisconnectedEventListener(peerDisconnectedEventListener)
         peerGroup.addBlocksDownloadedEventListener(blocksDownloadedEventListener)
 
         walletConfig.getCheckpoints(this)?.let {
@@ -185,13 +194,24 @@ class WalletAppKitService : Service() {
         notifyOnSetupCompletedListeners()
     }
 
+    private val peerConnectedEventListener = PeerConnectedEventListener { _, _ ->
+        notifyBlockchainSyncProgress(-1)
+    }
+
+    private val peerDisconnectedEventListener = PeerDisconnectedEventListener { _, _ ->
+        notifyBlockchainSyncProgress(-1)
+    }
+
     private val blocksDownloadedEventListener = BlocksDownloadedEventListener { _, _, _, blocksLeft ->
         if (deactivated.get()) {
             return@BlocksDownloadedEventListener
         }
+        notifyBlockchainSyncProgress(blocksLeft)
+    }
+
+    private fun notifyBlockchainSyncProgress(blocksLeft: Int) {
         val chainHeadHeight = kit.chain().chainHead.height
         val mostCommonChainHeight = if (blocksLeft > 0) kit.peerGroup().mostCommonChainHeight else chainHeadHeight
-//        Log.d(TAG, "mostCommonChainHeight: $mostCommonChainHeight, chainHeadHeight: $chainHeadHeight, blocksLeft: $blocksLeft")
         notificationAgent.updateBlockchainSyncProgress(this, mostCommonChainHeight, chainHeadHeight)
     }
 
@@ -219,12 +239,11 @@ class WalletAppKitService : Service() {
         }
     }
 
-    fun createUser(result: Result<Transaction>) {
+    fun createUser(userName: String, credits: Coin, result: Result<Transaction>) {
         try {
-            val amount = Coin.parseCoin("0.001")
             val privKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(EvolutionWalletAppKit.EVOLUTION_ACCOUNT_PATH, false).privKeyBytes)
-            val subTxRegister = SubTxRegister(1, "dj-demo" + Random().nextInt() / 1000, privKey)
-            val req = SendRequest.forSubTxRegister(kit.params(), subTxRegister, amount)
+            val subTxRegister = SubTxRegister(1, userName, privKey)
+            val req = SendRequest.forSubTxRegister(kit.params(), subTxRegister, credits)
 
             val sendResult = kit.wallet().sendCoins(req)
 
@@ -306,8 +325,10 @@ class WalletAppKitService : Service() {
         deactivated.set(true)
         onSetupCompleteListeners.clear()
         if (isSetupComplete) {
-            wallet.context.peerGroup.removeBlocksDownloadedEventListener(blocksDownloadedEventListener)
             wallet.context.masternodeSync.removeEventListener(masternodeSyncListener)
+            peerGroup.removeConnectedEventListener(peerConnectedEventListener)
+            peerGroup.removeDisconnectedEventListener(peerDisconnectedEventListener)
+            peerGroup.removeBlocksDownloadedEventListener(blocksDownloadedEventListener)
         }
         kit.stopAsync()
     }

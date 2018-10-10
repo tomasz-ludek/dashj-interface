@@ -8,6 +8,6 @@ class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        WalletAppKitService.init(this, TestNetDummyConfig.get())//DevNetDraDummyConfig.get())
+        WalletAppKitService.init(this, DevNetDraDummyConfig.get())
     }
 }

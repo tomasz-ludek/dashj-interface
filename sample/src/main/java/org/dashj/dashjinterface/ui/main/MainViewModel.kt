@@ -8,6 +8,7 @@ import org.bitcoinj.core.Transaction
 import org.bitcoinj.governance.GovernanceObject
 import org.dashj.dashjinterface.WalletAppKitService
 import org.dashj.dashjinterface.data.*
+import java.util.*
 
 class MainViewModel(application: Application) : DjInterfaceViewModel(application) {
 
@@ -53,15 +54,16 @@ class MainViewModel(application: Application) : DjInterfaceViewModel(application
     }
 
     fun createUser() {
-        djService.value?.createUser(object : WalletAppKitService.Result<Transaction> {
+        djService.value?.createUser("dj-demo" + Random().nextInt() / 1000, Coin.parseCoin("0.001"),
+                object : WalletAppKitService.Result<Transaction> {
 
-            override fun onSuccess(result: Transaction) {
-                _showMessageAction.call(Pair(false, result.hashAsString))
-            }
+                    override fun onSuccess(result: Transaction) {
+                        _showMessageAction.call(Pair(false, result.hashAsString))
+                    }
 
-            override fun onFailure(ex: Exception) {
-                _showMessageAction.call(Pair(true, ex.message!!))
-            }
-        })
+                    override fun onFailure(ex: Exception) {
+                        _showMessageAction.call(Pair(true, ex.message!!))
+                    }
+                })
     }
 }
