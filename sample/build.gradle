@@ -41,4 +41,10 @@ dependencies {
 
     implementation project(':dashj-interface')
     implementation "org.dashj:dashj-core:$dashj_version"
+
+    implementation 'org.slf4j:slf4j-api:1.7.22'
+    implementation('com.github.tony19:logback-android-classic:1.1.1-6') {
+        exclude(group: 'com.google.android', module: 'android')
+    }
+    implementation 'com.github.tony19:logback-android-core:1.1.1-6'
 }
