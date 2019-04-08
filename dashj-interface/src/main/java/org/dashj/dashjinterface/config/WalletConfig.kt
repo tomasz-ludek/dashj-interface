@@ -71,9 +71,13 @@ open class WalletConfig(
             Network.MAINNET -> MainNetParams.get()
             Network.TESTNET -> TestNet3Params.get()
             Network.REGNET -> RegTestParams.get()
-            Network.DEVNET_DRA -> {
-                val dnsSeeds = arrayOf("54.255.164.83", "52.77.231.13", "13.250.14.191")
-                DevNetParams.get("DRA", "yPhZ6EKNntpLDZBovHd1xAYjfwYmrBMT5N", 12999, dnsSeeds)
+            Network.DEVNET_MAITHAI -> {
+                val dnsSeeds = arrayOf("devnet-maithai.thephez.com",
+                        "54.187.113.35", "54.200.201.200", "34.216.233.163",
+                        "34.221.188.185", "54.189.63.67", "52.40.117.135",
+                        "54.187.111.107", "34.212.68.164", "18.237.142.23",
+                        "54.202.73.177")
+                DevNetParams.get("maithai", "yMtULrhoxd8vRZrsnFobWgRTidtjg2Rnjm", 20001, dnsSeeds)
             }
         }
 
@@ -90,7 +94,7 @@ open class WalletConfig(
     enum class Network {
         MAINNET,
         TESTNET,
-        DEVNET_DRA,
+        DEVNET_MAITHAI,
         REGNET
     }
 }

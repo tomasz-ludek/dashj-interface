@@ -36,6 +36,9 @@ class WalletAppKitService : Service() {
     companion object {
         private val TAG = WalletAppKitService::class.java.canonicalName
 
+        private var EVOLUTION_ACCOUNT_PATH
+                = ImmutableList.of(ChildNumber(5, true), ChildNumber.FIVE_HARDENED, ChildNumber.ZERO_HARDENED)
+
         private const val ACTION_START = "action_start"
         private const val ACTION_STOP = "action_stop"
 
@@ -147,7 +150,7 @@ class WalletAppKitService : Service() {
     private fun initWalletAppKit() {
         val walletAppKitDir = application.getDir(walletConfig.filesPrefix, Context.MODE_PRIVATE)
         kit = when {
-            walletConfig.network == WalletConfig.Network.DEVNET_DRA -> {
+            walletConfig.network == WalletConfig.Network.DEVNET_MAITHAI -> {
                 object : EvolutionWalletAppKit(walletConfig.networkParams, walletAppKitDir, walletConfig.filesPrefix, false) {
                     override fun onSetupCompleted() {
                         this@WalletAppKitService.onSetupCompleted()
@@ -241,7 +244,7 @@ class WalletAppKitService : Service() {
 
     fun createUser(userName: String, credits: Coin, result: Result<Transaction>) {
         try {
-            val privKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(EvolutionWalletAppKit.EVOLUTION_ACCOUNT_PATH, false).privKeyBytes)
+            val privKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(EVOLUTION_ACCOUNT_PATH, false).privKeyBytes)
             val subTxRegister = SubTxRegister(1, userName, privKey)
             val req = SendRequest.forSubTxRegister(kit.params(), subTxRegister, credits)
 
@@ -282,7 +285,7 @@ class WalletAppKitService : Service() {
 
     fun resetUser(userRegTxId: Sha256Hash, userCurSubTx: Sha256Hash, result: Result<Transaction>) {
         try {
-            val privKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(EvolutionWalletAppKit.EVOLUTION_ACCOUNT_PATH, false).privKeyBytes)
+            val privKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(EVOLUTION_ACCOUNT_PATH, false).privKeyBytes)
             val newPrivKey = ECKey.fromPrivate(kit.wallet().activeKeyChain.getKeyByPath(ImmutableList.of(ChildNumber.ONE_HARDENED), true).privKeyBytes)
             val reset = SendRequest.forSubTxResetKey(kit.params(),
                     SubTxResetKey(1, userRegTxId, userCurSubTx, SubTxTransition.EVO_TS_MIN_FEE, KeyId(newPrivKey.pubKeyHash), privKey))

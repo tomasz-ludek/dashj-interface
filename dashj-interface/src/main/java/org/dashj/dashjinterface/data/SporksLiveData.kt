@@ -3,11 +3,11 @@ package org.dashj.dashjinterface.data
 import android.app.Application
 import org.bitcoinj.core.SporkManager
 import org.bitcoinj.core.SporkMessage
-import org.bitcoinj.core.listeners.SporkManagerListener
+import org.bitcoinj.core.listeners.SporkUpdatedEventListener
 import org.dashj.dashjinterface.WalletAppKitService
 
 class SporksLiveData(application: Application) :
-        WalletAppKitServiceAsyncLiveData<SporksLiveData.Data>(application), SporkManagerListener {
+        WalletAppKitServiceAsyncLiveData<SporksLiveData.Data>(application), SporkUpdatedEventListener {
 
     private lateinit var sporkManager: SporkManager
 
@@ -21,7 +21,7 @@ class SporksLiveData(application: Application) :
         sporkManager.removeEventListener(this)
     }
 
-    override fun onUpdate(sporkMessage: SporkMessage?) {
+    override fun onSporkUpdated(sporkMessage: SporkMessage?) {
         updateData()
     }
 

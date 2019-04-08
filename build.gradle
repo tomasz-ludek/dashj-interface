@@ -2,7 +2,7 @@
 
 buildscript {
     ext.kotlin_version = '1.2.71'
-    ext.dashj_version = '0.15-SNAPSHOT'
+    ext.dashj_version = '0.15.1'
     repositories {
         google()
         jcenter()
